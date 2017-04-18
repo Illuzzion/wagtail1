@@ -8,6 +8,20 @@
     <h1>{{ page.title }}</h1>
     <p class="meta">{{ page.date }}</p>
 
+    {% with categories=page.categories.all %}
+        {% if categories %}
+            <h3>Post category:</h3>
+            <ul>
+                {% for category in categories %}
+                    <li style="display: inline">
+                        {% image category.ico fill-32x32 style="vertical-align: middle" %}
+                        {{ category.name }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
     <div class="intro">{{ page.intro|richtext }}</div>
 
     {{ page.body|richtext }}
