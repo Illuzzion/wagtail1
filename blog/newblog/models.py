@@ -4,9 +4,11 @@ from django.db import models
 from modelcluster.fields import ParentalKey, ParentalManyToManyField
 from modelcluster.tags import ClusterTaggableManager
 from taggit.models import TaggedItemBase
-from wagtail.wagtailadmin.edit_handlers import FieldPanel, InlinePanel, MultiFieldPanel
-from wagtail.wagtailcore.fields import RichTextField
+from wagtail.wagtailadmin.edit_handlers import FieldPanel, InlinePanel, MultiFieldPanel, StreamFieldPanel
+from wagtail.wagtailcore import blocks
+from wagtail.wagtailcore.fields import RichTextField, StreamField
 from wagtail.wagtailcore.models import Page, Orderable
+from wagtail.wagtailimages.blocks import ImageChooserBlock
 from wagtail.wagtailimages.edit_handlers import ImageChooserPanel
 from wagtail.wagtailsearch import index
 from wagtail.wagtailsnippets.models import register_snippet
@@ -31,11 +33,41 @@ class BlogIndexPage(Page):
 class BlogPageTag(TaggedItemBase):
     content_object = ParentalKey('BlogPage', related_name='tagged_items')
 
+    class Meta:
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
+
+
+class PersonBlock(blocks.StructBlock):
+    name = blocks.CharBlock()
+    height = blocks.DecimalBlock()
+    age = blocks.IntegerBlock()
+    email = blocks.EmailBlock()
+
+    # def get_context(self, value, parent_context=None):
+    #     context = super(PersonBlock, self).get_context(value, parent_context=parent_context)
+    #     return context
+
+    class Meta:
+        template = 'blocks/person_block.html'
+
 
 class BlogPage(Page):
     date = models.DateField("Post date")
     intro = models.CharField(max_length=250)
-    body = RichTextField(blank=True)
+    body = StreamField([
+        ('heading', blocks.CharBlock(classname="full title")),
+        ('paragraph', blocks.RichTextBlock()),
+        ('image', ImageChooserBlock()),
+        ('html', blocks.RawHTMLBlock()),
+        # ('person', blocks.StructBlock([
+        #     ('first_name', blocks.CharBlock(required=True)),
+        #     ('surname', blocks.CharBlock(required=True)),
+        #     ('photo', ImageChooserBlock()),
+        #     ('biography', blocks.RichTextBlock()),
+        # ])),
+        ('person', PersonBlock()),
+    ])
     tags = ClusterTaggableManager(through=BlogPageTag, blank=True)
     categories = ParentalManyToManyField('BlogCategory', blank=True)
 
@@ -58,7 +90,7 @@ class BlogPage(Page):
             FieldPanel('categories', widget=forms.CheckboxSelectMultiple),
         ], heading="Blog information"),
         FieldPanel('intro'),
-        FieldPanel('body'),
+        StreamFieldPanel('body'),
         InlinePanel('gallery_images', label="Gallery images"),
     ]
 
